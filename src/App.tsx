@@ -1,62 +1,80 @@
-import { ReactElement, useState, useEffect, useCallback } from "react";
-import { debounce } from "lodash";
+import { ReactElement } from "react";
 import "./App.css";
+import tweets from "./tweets";
+import { formatDistance } from "date-fns";
 
-const API_URL = "https://ws.audioscrobbler.com/2.0/";
-const API_KEY = "430711e29ad09c493dad2831eb0bbd08";
+function Circle() {
+  return <div className="circle" />;
+}
 
-const paramsStringFromQuery = (artist: string): string =>
-  `?method=artist.search&artist=${artist}&api_key=${API_KEY}&format=json`;
+interface FooterProps {
+  fixed?: boolean;
+}
+function Footer(props: FooterProps) {
+  const cn = "flex px py align-items";
+  return (
+    <div
+      className={
+        props.fixed ? `fixed-bottom space-around ${cn}` : `space-between ${cn}`
+      }
+    >
+      <div>❤️</div>
+      <div>❤️</div>
+      <div>❤️</div>
+      <div>❤️</div>
+    </div>
+  );
+}
+
+function Tweet(props) {
+  return (
+    <div className="flex tweet px">
+      <div className="flex column">
+        {/* these urls don't seem to work
+        just going to leave the circle in
+        <img src={props.user.profile_img_url} />
+        */}
+        <Circle />
+      </div>
+      <div className="flex column">
+        <div className="flex small-text">
+          <b>{props.user.name}</b>
+          <div className="pl">@{props.user.screen_name}</div>
+          <div className="pl">
+            {" "}
+            - {formatDistance(new Date(props.created_at), Date.now())}
+          </div>
+        </div>
+        <div>{props.text}</div>
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
+function Header() {
+  return (
+    <div className="fixed-top flex align-items px py">
+      <Circle />
+      <div>
+        <b>Home</b>
+      </div>
+      <div className="ml-auto">❤️</div>
+    </div>
+  );
+}
 
 function App(): ReactElement {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-
-  const search = useCallback(
-    debounce(async (query: string) => {
-      // async function search(query) {
-      if (!query) {
-        setResults([]);
-        return;
-      }
-
-      const url = API_URL + paramsStringFromQuery(query.trimEnd());
-      const data = await fetch(url).then((r) => r.json());
-
-      const results = data?.results?.artistmatches?.artist;
-
-      if (results) {
-        setResults(results);
-      }
-    }, 1000),
-    []
-  );
-
-  useEffect(() => {
-    search(query);
-  }, [query]);
-
   return (
-    <div>
-      <input
-        placeholder="search for stuff"
-        value={query}
-        onChange={(e) => {
-          const value = e.target.value;
-          setQuery(value.trimStart());
-        }}
-      />
-
-      <h1>results: </h1>
-      {results.length === 0 && <b>No results yet or nothing matched</b>}
-
-      {results.map(
-        // todo: missing Artist TS interface
-        (artist) => (
-          <div key={artist?.name}>{artist?.name}</div>
-        )
-      )}
-    </div>
+    <>
+      <Header />
+      <div className="tweets-container">
+        {tweets.map((t) => (
+          <Tweet key={t.id} {...t} />
+        ))}
+      </div>
+      <Footer fixed />
+    </>
   );
 }
 
